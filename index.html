@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Chota Baby Mroq: Chembur Rampage</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
     body {
       background-color: #05050a;
       color: #00ff66;
@@ -16,40 +16,53 @@
       justify-content: center;
       min-height: 100vh;
       overflow: hidden;
-      touch-action: manipulation;
+      touch-action: none;
     }
     h1 {
       margin-bottom: 6px;
       font-size: 18px;
       letter-spacing: 2px;
       text-transform: uppercase;
-      color: #00ff66;
+      color: var(--primary-color, #00ff66);
       text-shadow: 2px 2px #ff0055;
     }
     .game-box {
       position: relative;
       border: 4px solid #222;
-      box-shadow: 0 0 25px rgba(0, 255, 102, 0.4);
+      box-shadow: 0 0 25px rgba(0, 255, 102, 0.3);
+      max-width: 100vw;
     }
     canvas {
       display: block;
       background-color: #0a0014;
       image-rendering: pixelated;
+      max-width: 100%;
+      height: auto;
     }
-    .instructions {
+    .palette-selector {
       margin-top: 6px;
-      color: #aaa;
-      font-size: 12px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
     }
-    kbd {
-      background: #222;
-      color: #fff;
-      padding: 2px 5px;
-      border-radius: 3px;
+    .palette-btn {
+      background: #111;
       border: 1px solid #444;
+      color: #fff;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-family: monospace;
+      cursor: pointer;
+      border-radius: 4px;
     }
-    /* Mobile Controls Overlay */
-    .mobile-controls {
+    .palette-btn.active {
+      border-color: #00ff66;
+      color: #00ff66;
+      background: #222;
+    }
+    
+    /* MOBILE TOUCH CONTROLS */
+    .touch-controls {
       display: none;
       width: 100%;
       max-width: 800px;
@@ -57,61 +70,79 @@
       margin-top: 8px;
       padding: 0 10px;
     }
-    .touch-btn {
-      background: #111;
-      color: #00ff66;
-      border: 2px solid #00ff66;
-      padding: 12px 18px;
-      font-family: monospace;
-      font-weight: bold;
-      font-size: 14px;
-      border-radius: 6px;
-      touch-action: manipulation;
-    }
-    .touch-btn:active { background: #00ff66; color: #000; }
-    .nuke-btn { border-color: #ff0055; color: #ff0055; }
-    .nuke-btn:active { background: #ff0055; color: #fff; }
-    @media (max-width: 800px) {
-      .mobile-controls { display: flex; }
+    @media (pointer: coarse), (max-width: 800px) {
+      .touch-controls { display: flex; }
       .instructions { display: none; }
     }
+    .d-pad, .action-pad { display: flex; gap: 8px; }
+    .t-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      color: #fff;
+      font-weight: bold;
+      font-family: monospace;
+      font-size: 14px;
+      padding: 12px 18px;
+      border-radius: 8px;
+      touch-action: manipulation;
+    }
+    .t-btn:active { background: rgba(0, 255, 102, 0.4); }
+    .t-btn.nuke { border-color: #00ffff; color: #00ffff; }
+    .instructions { margin-top: 6px; color: #aaa; font-size: 12px; }
+    kbd { background: #222; color: #fff; padding: 2px 6px; border-radius: 3px; border: 1px solid #444; }
   </style>
 </head>
 <body>
 
-  <h1>CHOTA BABY MROQ DESTROYS CHEMBUR</h1>
+  <h1 id="titleText">CHOTA BABY MROQ DESTROYS CHEMBUR</h1>
   <div class="game-box">
     <canvas id="gameCanvas" width="800" height="450"></canvas>
   </div>
-  
-  <div class="instructions">
-    Move: <kbd>A</kbd> / <kbd>D</kbd> or <kbd>←</kbd> / <kbd>→</kbd> | Smash: <kbd>SPACE</kbd> | Nuke: <kbd>ENTER</kbd>
+
+  <div class="palette-selector">
+    <span style="font-size:11px; color:#aaa;">PALETTE:</span>
+    <button class="palette-btn active" onclick="setPalette('neon', this)">1. NEON</button>
+    <button class="palette-btn" onclick="setPalette('retro', this)">2. RETRO</button>
+    <button class="palette-btn" onclick="setPalette('synth', this)">3. SYNTH</button>
   </div>
 
-  <div class="mobile-controls">
-    <div>
-      <button class="touch-btn" id="btnLeft">◄ LEFT</button>
-      <button class="touch-btn" id="btnRight">RIGHT ►</button>
+  <div class="touch-controls">
+    <div class="d-pad">
+      <button class="t-btn" id="btnLeft">◄ LEFT</button>
+      <button class="t-btn" id="btnRight">RIGHT ►</button>
     </div>
-    <div>
-      <button class="touch-btn" id="btnSmash">SMASH!</button>
-      <button class="touch-btn nuke-btn" id="btnNuke">NUKE</button>
+    <div class="action-pad">
+      <button class="t-btn" id="btnSmash">SMASH</button>
+      <button class="t-btn nuke" id="btnNuke">NUKE</button>
     </div>
+  </div>
+
+  <div class="instructions">
+    Move: <kbd>A</kbd> / <kbd>D</kbd> | Smash: <kbd>SPACE</kbd> | Screen-Nuke Breath: <kbd>ENTER</kbd> | Palette: <kbd>C</kbd>
   </div>
 
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// --- PALETTES ---
-const palettes = [
-  { name: "CYBER", bg: "#0a0014", ground: "#1a0d00", main: "#00ff66", accent: "#ff0055", window: "#ffea00", text: "#ffffff" },
-  { name: "RETRO", bg: "#001a1a", ground: "#1a3300", main: "#ffaa00", accent: "#00ffff", window: "#ffffff", text: "#ffff00" },
-  { name: "NIGHT", bg: "#050510", ground: "#111122", main: "#ff3366", accent: "#33ffff", window: "#ffcc00", text: "#ffffff" }
-];
-let paletteIndex = 0;
+// --- PALETTE SYSTEM ---
+const palettes = {
+  neon:  { primary: '#00ff66', secondary: '#00ffff', accent: '#ff0055', bg: '#0a0014', building: '#2a2a44', window: '#ffea00' },
+  retro: { primary: '#ff4400', secondary: '#ffcc00', accent: '#ff0000', bg: '#140500', building: '#3d1c10', window: '#ffaa00' },
+  synth: { primary: '#ff00aa', secondary: '#00e5ff', accent: '#9d00ff', bg: '#090017', building: '#281545', window: '#00ffff' }
+};
+let currentPaletteKey = 'neon';
+let pal = palettes.neon;
 
-// --- AUDIO SYNTHESIZER ---
+function setPalette(key, btnEl) {
+  currentPaletteKey = key;
+  pal = palettes[key];
+  document.querySelectorAll('.palette-btn').forEach(b => b.classList.remove('active'));
+  if (btnEl) btnEl.classList.add('active');
+  document.getElementById('titleText').style.setProperty('--primary-color', pal.primary);
+}
+
+// --- PURE AUDIO SYNTHESIZER ---
 let audioCtx = null;
 function playSound(type) {
   if (!audioCtx) {
@@ -128,7 +159,7 @@ function playSound(type) {
 
     if (type === 'smash') {
       osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(130, now);
+      osc.frequency.setValueAtTime(140, now);
       osc.frequency.exponentialRampToValueAtTime(30, now + 0.12);
       gain.gain.setValueAtTime(0.3, now);
       gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
@@ -142,16 +173,16 @@ function playSound(type) {
       osc.start(now); osc.stop(now + 0.8);
     } else if (type === 'hit') {
       osc.type = 'square';
-      osc.frequency.setValueAtTime(100, now);
-      osc.frequency.linearRampToValueAtTime(30, now + 0.12);
-      gain.gain.setValueAtTime(0.25, now);
-      gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
-      osc.start(now); osc.stop(now + 0.12);
+      osc.frequency.setValueAtTime(120, now);
+      osc.frequency.linearRampToValueAtTime(30, now + 0.15);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+      osc.start(now); osc.stop(now + 0.15);
     }
   } catch(e) {}
 }
 
-// --- GAME STATE ---
+// --- GAME STATE VARIABLES ---
 let gameState = 'START';
 let score = 0;
 let highScore = 0;
@@ -168,15 +199,13 @@ let bgOffset = 0;
 let transitionProgress = 0;
 let isTransitioning = false;
 
-// --- CHEMBUR LANDMARKS DEFINITION ---
-const chemburLandmarks = [
-  { name: "Chembur Stn", type: "station" },
-  { name: "RK Studio", type: "studio" },
-  { name: "Diamond Gdn", type: "garden" },
-  { name: "BARC Dome", type: "nuclear" },
-  { name: "KSTAR Mall", type: "mall" },
-  { name: "Monorail Pier", type: "monorail" },
-  { name: "Sattu Sweets", type: "shop" }
+// --- 5 EXPANDED CHEMBUR LOCATION SETS ---
+const locationSets = [
+  ["Chembur Stn", "Diamond Gdn", "RK Studio", "KSTAR Mall", "Monorail Pier", "Fine Arts", "SCLR Flyover"],
+  ["BARC Gate", "Chembur Camp", "Sattu Sweets", "BPGC Golf Club", "Sindhi Colony", "Basant Cinema", "Trombay Hill"],
+  ["Acharya Col", "Chimni Garden", "Ambedkar Park", "Central Ave", "Deonar Chowk", "Vaidya Ground", "Shell Colony"],
+  ["TISS Campus", "Cubic Mall", "Tilak Nagar Stn", "Natraj Cinema", "Sahyadri Park", "Ghatkopar Link", "Acres Club"],
+  ["Anushakti Nagar", "Mahul Village", "Mysore Colony", "RCF Plant", "Trombay Jetty", "Panvel Highway", "Chembur Gaothan"]
 ];
 
 const player = {
@@ -192,38 +221,49 @@ let bullets = [];
 let particles = [];
 let popups = [];
 
-function initBuildings() {
+function initBuildings(setIndex = 0) {
   buildings = [];
+  const currentSet = locationSets[setIndex % locationSets.length];
   const count = 7;
   const spacing = 105;
   for (let i = 0; i < count; i++) {
-    const landmark = chemburLandmarks[i % chemburLandmarks.length];
-    const h = 110 + Math.floor(Math.random() * 80);
+    const h = 110 + Math.floor(Math.random() * 110);
     buildings.push({
-      x: 35 + i * spacing, y: 360 - h, w: 85, h: h,
-      hp: 100, maxHp: 100, name: landmark.name, type: landmark.type
+      x: 40 + i * spacing, y: 360 - h, w: 80, h: h,
+      hp: 100, maxHp: 100, name: currentSet[i % currentSet.length],
+      // Architectural variation details
+      style: Math.floor(Math.random() * 3), // 0: Office, 1: Brick/Residential, 2: High Tech
+      roofType: Math.floor(Math.random() * 3) // 0: Tank, 1: Antenna, 2: Helipad/Ledge
     });
   }
 }
 
 function spawnHelicopters() {
   if (gameState !== 'PLAYING') return;
-  if (Math.random() < 0.025 && helicopters.length < 3 + Math.floor(stagesCleared * 0.4)) {
+  if (Math.random() < 0.03 && helicopters.length < 3 + Math.floor(stagesCleared * 0.4)) {
     const fromLeft = Math.random() < 0.5;
     helicopters.push({
       x: fromLeft ? -60 : canvas.width + 10,
       y: 40 + Math.random() * 110,
       w: 50, h: 22,
-      vx: fromLeft ? (1.2 + Math.random()) : -(1.2 + Math.random()),
-      fireCooldown: 50 + Math.random() * 50
+      vx: fromLeft ? (1.2 + Math.random() * 1.0) : -(1.2 + Math.random() * 1.0),
+      fireCooldown: 50 + Math.random() * 40
     });
   }
 }
 
-// --- CONTROLS ---
+// --- INPUT HANDLERS ---
 const keys = {};
 window.addEventListener('keydown', (e) => {
   keys[e.code] = true;
+
+  if (e.code === 'KeyC') {
+    const keysList = Object.keys(palettes);
+    const nextIdx = (keysList.indexOf(currentPaletteKey) + 1) % keysList.length;
+    const nextKey = keysList[nextIdx];
+    setPalette(nextKey, document.querySelectorAll('.palette-btn')[nextIdx]);
+  }
+
   if (gameState === 'START') { startGame(); return; }
   if (gameState === 'GAMEOVER' && (e.code === 'KeyR' || e.code === 'Space')) { startGame(); return; }
 
@@ -234,50 +274,36 @@ window.addEventListener('keydown', (e) => {
 });
 window.addEventListener('keyup', (e) => { keys[e.code] = false; });
 
-// Mouse / Touch Canvas Clicks
-canvas.addEventListener('click', (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
-  const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
-
-  // Palette Button Click
-  if (clickX > canvas.width - 110 && clickX < canvas.width - 20 && clickY > 60 && clickY < 90) {
-    paletteIndex = (paletteIndex + 1) % palettes.length;
-    return;
-  }
-
-  if (gameState === 'START' || gameState === 'GAMEOVER') startGame();
-  else if (gameState === 'PLAYING' && breathEnergy >= maxBreathEnergy) triggerAtomicNuke();
-});
-
-// Mobile Button Elements
-const setupTouch = (id, startFn, endFn) => {
-  const btn = document.getElementById(id);
-  btn.addEventListener('touchstart', (e) => { e.preventDefault(); startFn(); }, { passive: false });
-  btn.addEventListener('touchend', (e) => { e.preventDefault(); if (endFn) endFn(); }, { passive: false });
-  btn.addEventListener('mousedown', startFn);
-  btn.addEventListener('mouseup', endFn);
+// Touch Button Event Listeners
+const setupTouchBtn = (id, onStart, onEnd) => {
+  const el = document.getElementById(id);
+  el.addEventListener('touchstart', (e) => { e.preventDefault(); onStart(); });
+  el.addEventListener('touchend', (e) => { e.preventDefault(); if(onEnd) onEnd(); });
+  el.addEventListener('mousedown', (e) => { e.preventDefault(); onStart(); });
+  el.addEventListener('mouseup', (e) => { e.preventDefault(); if(onEnd) onEnd(); });
 };
 
-setupTouch('btnLeft', () => keys['ArrowLeft'] = true, () => keys['ArrowLeft'] = false);
-setupTouch('btnRight', () => keys['ArrowRight'] = true, () => keys['ArrowRight'] = false);
-setupTouch('btnSmash', () => { if (gameState === 'PLAYING') triggerSmash(); else startGame(); });
-setupTouch('btnNuke', () => { if (gameState === 'PLAYING' && breathEnergy >= maxBreathEnergy) triggerAtomicNuke(); });
+setupTouchBtn('btnLeft', () => { keys['ArrowLeft'] = true; }, () => { keys['ArrowLeft'] = false; });
+setupTouchBtn('btnRight', () => { keys['ArrowRight'] = true; }, () => { keys['ArrowRight'] = false; });
+setupTouchBtn('btnSmash', () => { 
+  if (gameState === 'START' || gameState === 'GAMEOVER') startGame();
+  else if (gameState === 'PLAYING' && !player.attacking) triggerSmash();
+});
+setupTouchBtn('btnNuke', () => { 
+  if (gameState === 'PLAYING' && breathEnergy >= maxBreathEnergy) triggerAtomicNuke();
+});
 
-function triggerSmash() {
-  if (!player.attacking) {
-    player.attacking = true; player.attackTimer = 10;
-    playSound('smash'); performSmash();
-  }
-}
+canvas.addEventListener('click', () => {
+  if (gameState === 'START' || gameState === 'GAMEOVER') startGame();
+});
 
-// --- CORE GAME FUNCTIONS ---
+// --- CORE GAME ACTIONS ---
 function startGame() {
   score = 0; timer = 60; stagesCleared = 0;
   breathEnergy = 0; player.hp = 100;
   helicopters = []; bullets = []; particles = []; popups = [];
   gameState = 'PLAYING';
-  initBuildings(); resetTimer();
+  initBuildings(0); resetTimer();
 }
 
 function resetTimer() {
@@ -296,22 +322,34 @@ function gameOver() {
   clearInterval(timerInterval);
 }
 
+function triggerSmash() {
+  player.attacking = true; 
+  player.attackTimer = 10;
+  playSound('smash'); 
+  performSmash();
+}
+
 function triggerAtomicNuke() {
-  breathEnergy = 0; nukeActiveTimer = 35; screenShake = 20;
+  breathEnergy = 0;
+  nukeActiveTimer = 35;
+  screenShake = 25;
   playSound('nuke');
 
   bullets = [];
+
   helicopters.forEach(h => {
-    score += 300; addPopup("+300", h.x, h.y, palettes[paletteIndex].accent);
-    createParticles(h.x + h.w/2, h.y + h.h/2, palettes[paletteIndex].accent, 10);
+    score += 300;
+    addPopup("+300", h.x, h.y, pal.secondary);
+    createParticles(h.x + h.w/2, h.y + h.h/2, pal.secondary, 12);
   });
   helicopters = [];
 
   buildings.forEach(b => {
     if (b.hp > 0) {
-      b.hp = 0; score += 500;
-      addPopup("NUKE! +500", b.x + b.w/2, b.y + 20, '#ff0055');
-      createParticles(b.x + b.w/2, b.y + b.h/2, palettes[paletteIndex].main, 12);
+      b.hp = 0;
+      score += 600;
+      addPopup("NUKE! +600", b.x + b.w/2, b.y + 20, pal.accent);
+      createParticles(b.x + b.w/2, b.y + b.h/2, pal.primary, 15);
     }
   });
 
@@ -325,16 +363,15 @@ function performSmash() {
   buildings.forEach(b => {
     if (b.hp > 0 && smashX < b.x + b.w && smashX + range > b.x) {
       b.hp = Math.max(0, b.hp - 35);
-      score += 80;
-      // SLOWED BREATH CHARGE: 3% per smash
-      breathEnergy = Math.min(maxBreathEnergy, breathEnergy + 3.5);
-      addPopup("+80", b.x + b.w/2, b.y + 20);
-      createParticles(b.x + b.w/2, b.y + b.h/2, '#ffaa00', 5);
+      score += 100;
+      breathEnergy = Math.min(maxBreathEnergy, breathEnergy + 2); // SLOWED BREATH RATE
+      addPopup("+100", b.x + b.w/2, b.y + 20);
+      createParticles(b.x + b.w/2, b.y + b.h/2, '#ffaa00', 6);
 
       if (b.hp === 0) {
-        score += 350;
-        breathEnergy = Math.min(maxBreathEnergy, breathEnergy + 6);
-        addPopup("DESTROYED! +350", b.x + b.w/2, b.y - 10, '#ff0055');
+        score += 400;
+        breathEnergy = Math.min(maxBreathEnergy, breathEnergy + 5); // SLOWED BREATH RATE ON DESTRUCTION
+        addPopup("DESTROYED! +400", b.x + b.w/2, b.y - 10, pal.accent);
         checkStageClear();
       }
     }
@@ -342,10 +379,13 @@ function performSmash() {
 }
 
 function checkStageClear() {
-  if (buildings.every(b => b.hp <= 0) && !isTransitioning) {
-    stagesCleared++; score += 1000;
-    addPopup("CHEMBUR STAGE CLEARED! +1000", canvas.width/2, 140, palettes[paletteIndex].main);
-    isTransitioning = true; transitionProgress = 0;
+  const allDestroyed = buildings.every(b => b.hp <= 0);
+  if (allDestroyed && !isTransitioning) {
+    stagesCleared++;
+    score += 1000;
+    addPopup("CHEMBUR STAGE CLEARED! +1000", canvas.width/2, 150, pal.primary);
+    isTransitioning = true;
+    transitionProgress = 0;
   }
 }
 
@@ -353,14 +393,14 @@ function createParticles(x, y, color = '#ffaa00', count = 8) {
   for (let i = 0; i < count; i++) {
     particles.push({
       x: x, y: y,
-      vx: (Math.random() - 0.5) * 6, vy: (Math.random() - 0.5) * 6,
-      size: Math.random() * 5 + 3, life: 15, color: color
+      vx: (Math.random() - 0.5) * 8, vy: (Math.random() - 0.5) * 8,
+      size: Math.random() * 6 + 3, life: 18, color: color
     });
   }
 }
 
 function addPopup(text, x, y, color = '#ffff00') {
-  popups.push({ text, x: Math.max(40, Math.min(canvas.width - 40, x)), y, life: 32, color });
+  popups.push({ text, x: Math.max(40, Math.min(canvas.width - 40, x)), y, life: 35, color });
 }
 
 // --- UPDATE LOGIC ---
@@ -383,26 +423,28 @@ function update() {
     transitionProgress += 0.05;
     bgOffset -= 15;
     if (transitionProgress >= 1) {
-      isTransitioning = false; bgOffset = 0;
-      initBuildings();
+      isTransitioning = false;
+      bgOffset = 0;
+      initBuildings(stagesCleared);
     }
   }
 
   spawnHelicopters();
 
-  // Bullet Speed Calculation (Starts Slow, Gentle Increase with Stage Cap)
-  const bulletSpeed = Math.min(4.5, 2.2 + (stagesCleared * 0.25));
-
+  // Helicopters AI & Bullet Hell Logic (ACCESSIBLE & SLOW BULLETS)
   helicopters.forEach((h, i) => {
     h.x += h.vx;
     if (h.x < -100 || h.x > canvas.width + 100) helicopters.splice(i, 1);
 
     h.fireCooldown--;
     if (h.fireCooldown <= 0) {
-      h.fireCooldown = 60 + Math.random() * 40;
+      h.fireCooldown = 55 + Math.random() * 30;
       const dx = (player.x + player.w/2) - (h.x + h.w/2);
       const dy = (player.y + player.h/2) - (h.y + h.h/2);
       const dist = Math.sqrt(dx*dx + dy*dy);
+      
+      // SLOW BULLET SPEED + SMALL SCALING PER STAGE (MAX 3.8)
+      const bulletSpeed = Math.min(3.8, 1.8 + stagesCleared * 0.25);
       bullets.push({
         x: h.x + h.w/2, y: h.y + h.h/2,
         vx: (dx / dist) * bulletSpeed, vy: (dy / dist) * bulletSpeed
@@ -414,10 +456,12 @@ function update() {
     b.x += b.vx; b.y += b.vy;
 
     if (b.x > player.x && b.x < player.x + player.w && b.y > player.y && b.y < player.y + player.h) {
-      player.hp = Math.max(0, player.hp - 6);
-      screenShake = 5; playSound('hit');
-      addPopup("-6 HP", player.x + player.w/2, player.y - 10, '#ff0000');
+      player.hp = Math.max(0, player.hp - 8);
+      screenShake = 6;
+      playSound('hit');
+      addPopup("-8 HP", player.x + player.w/2, player.y - 10, '#ff0000');
       bullets.splice(i, 1);
+
       if (player.hp <= 0) gameOver();
     }
     if (b.x < 0 || b.x > canvas.width || b.y > 400) bullets.splice(i, 1);
@@ -433,39 +477,81 @@ function update() {
   });
 }
 
-// --- CUSTOM UNIQUE BUILDING RENDERING ---
-function drawCustomBuilding(b, currentH, currentY, pal) {
-  ctx.save();
-  ctx.fillStyle = '#2d2d48'; ctx.fillRect(b.x, currentY, b.w, currentH);
+// --- DETAILED BUILDING ART RENDERING ---
+function drawDetailedBuilding(b) {
+  const currentH = (b.h * (b.hp / b.maxHp));
+  const currentY = 360 - currentH;
 
-  if (b.type === "station") { // Railway Clock Tower & Roof
-    ctx.fillStyle = pal.accent; ctx.beginPath();
-    ctx.moveTo(b.x, currentY); ctx.lineTo(b.x + b.w/2, currentY - 18); ctx.lineTo(b.x + b.w, currentY); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(b.x + b.w/2, currentY + 20, 10, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#000'; ctx.fillRect(b.x + b.w/2 - 1, currentY + 14, 2, 8);
-  } else if (b.type === "studio") { // Vintage RK Studio Soundstage
-    ctx.fillStyle = '#111'; ctx.fillRect(b.x + 10, currentY + 15, b.w - 20, 25);
-    ctx.fillStyle = pal.window; ctx.font = 'bold 9px monospace'; ctx.fillText('R.K. STAGE', b.x + b.w/2, currentY + 30);
-  } else if (b.type === "garden") { // Diamond Arch & Dome
-    ctx.fillStyle = '#1b4d2e'; ctx.fillRect(b.x + 5, currentY + 5, b.w - 10, currentH - 5);
-    ctx.fillStyle = pal.window; ctx.beginPath(); ctx.arc(b.x + b.w/2, currentY + 15, 14, Math.PI, 0); ctx.fill();
-  } else if (b.type === "nuclear") { // BARC Nuclear Reactor Dome
-    ctx.fillStyle = '#aaa'; ctx.beginPath(); ctx.arc(b.x + b.w/2, currentY + 30, 32, Math.PI, 0); ctx.fill();
-    ctx.fillStyle = pal.accent; ctx.beginPath(); ctx.arc(b.x + b.w/2, currentY + 25, 8, 0, Math.PI*2); ctx.fill();
-  } else if (b.type === "mall") { // Glass Mall
-    ctx.fillStyle = pal.accent;
-    for (let wy = currentY + 10; wy < 340; wy += 20) { ctx.fillRect(b.x + 10, wy, b.w - 20, 12); }
-  } else if (b.type === "monorail") { // Monorail Pillar & Track
-    ctx.fillStyle = '#555'; ctx.fillRect(b.x + b.w/2 - 8, currentY, 16, currentH);
-    ctx.fillStyle = pal.window; ctx.fillRect(b.x, currentY + 15, b.w, 12);
-  } else { // Sattu Sweets Shop Front
-    ctx.fillStyle = '#ffaa00'; ctx.fillRect(b.x + 5, 330, b.w - 10, 25);
-    ctx.fillStyle = pal.window; ctx.fillRect(b.x + 15, 335, b.w - 30, 8);
+  if (b.hp > 0) {
+    // 1. Building Base Body & Shading
+    ctx.fillStyle = pal.building; 
+    ctx.fillRect(b.x, currentY, b.w, currentH);
+    
+    // Side Shadow for 3D depth
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(b.x + b.w - 12, currentY, 12, currentH);
+
+    // Wall Texture Accents
+    if (b.style === 1) { // Brick pattern lines
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      for (let ly = currentY + 10; ly < 350; ly += 14) {
+        ctx.fillRect(b.x, ly, b.w, 2);
+      }
+    }
+
+    // 2. Windows Grid with Architectural Ledges
+    ctx.fillStyle = pal.window;
+    const cols = 3;
+    const colW = (b.w - 20) / cols;
+    for (let c = 0; c < cols; c++) {
+      const wx = b.x + 8 + c * (colW + 4);
+      for (let wy = currentY + 14; wy < 345; wy += 22) {
+        // Window Frame / Reflection
+        ctx.fillRect(wx, wy, colW, 10);
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.fillRect(wx, wy, colW / 2, 4); // Glass highlight
+        ctx.fillStyle = pal.window;
+        
+        // Window sill Ledge
+        ctx.fillStyle = '#111';
+        ctx.fillRect(wx - 1, wy + 10, colW + 2, 2);
+        ctx.fillStyle = pal.window;
+      }
+    }
+
+    // 3. Rooftop Details
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(b.x - 2, currentY - 4, b.w + 4, 4); // Roof ledge cornice
+
+    if (b.roofType === 0) { // Water Tank
+      ctx.fillStyle = '#555';
+      ctx.fillRect(b.x + 12, currentY - 16, 16, 12);
+      ctx.fillStyle = '#333';
+      ctx.fillRect(b.x + 10, currentY - 4, 20, 2);
+    } else if (b.roofType === 1) { // Radio Antenna with Blinking Beacon
+      ctx.fillStyle = '#888';
+      ctx.fillRect(b.x + b.w/2 - 1, currentY - 22, 2, 18);
+      ctx.fillStyle = (Math.floor(Date.now() / 400) % 2 === 0) ? '#ff0000' : '#440000';
+      ctx.fillRect(b.x + b.w/2 - 3, currentY - 24, 6, 4);
+    } else if (b.roofType === 2) { // Air Conditioning Units
+      ctx.fillStyle = '#666';
+      ctx.fillRect(b.x + b.w - 24, currentY - 10, 14, 6);
+      ctx.fillStyle = '#222';
+      ctx.fillRect(b.x + b.w - 20, currentY - 8, 6, 4);
+    }
+
+    // Landmark Name Plate
+    ctx.fillStyle = '#ffffff'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(b.name, b.x + b.w / 2, 378);
+  } else {
+    // Ruined Building Rubble & Smoke Stumps
+    ctx.fillStyle = '#222'; ctx.fillRect(b.x, 342, b.w, 18);
+    ctx.fillStyle = '#444'; ctx.fillRect(b.x + 5, 340, 15, 6); ctx.fillRect(b.x + 45, 338, 20, 8);
+    ctx.fillStyle = pal.accent; ctx.font = '10px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('RUINED', b.x + b.w / 2, 357);
   }
-  ctx.restore();
 }
 
-// --- RENDER LOGIC ---
 function drawPlayer() {
   ctx.save();
   ctx.translate(player.x + player.w / 2, player.y + player.h / 2);
@@ -474,7 +560,7 @@ function drawPlayer() {
   ctx.fillStyle = '#1c7c34'; ctx.fillRect(-20, -30, 40, 60);
   ctx.fillStyle = '#145a25'; ctx.fillRect(-10, -40, 35, 20);
   ctx.fillStyle = '#ffea00'; ctx.fillRect(15, -35, 6, 6);
-  ctx.fillStyle = '#00ffaa';
+  ctx.fillStyle = pal.primary;
   ctx.fillRect(-24, -20, 6, 8); ctx.fillRect(-24, -5, 6, 8); ctx.fillRect(-24, 10, 6, 8);
 
   if (player.attacking) {
@@ -482,49 +568,34 @@ function drawPlayer() {
   }
   ctx.restore();
 
-  ctx.fillStyle = palettes[paletteIndex].main; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = pal.primary; ctx.font = '11px monospace'; ctx.textAlign = 'center';
   ctx.fillText('MROQ', player.x + player.w / 2, player.y - 10);
 }
 
 function draw() {
-  const pal = palettes[paletteIndex];
-
   ctx.save();
   if (screenShake > 0) {
     ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
   }
 
-  // Sky & Background
+  // Sky & Moon
   ctx.fillStyle = pal.bg; ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = pal.window; ctx.beginPath(); ctx.arc(720, 60, 28, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fff59d'; ctx.beginPath(); ctx.arc(720, 60, 30, 0, Math.PI * 2); ctx.fill();
 
   // Ground Line
-  ctx.fillStyle = pal.ground; ctx.fillRect(0, 360, canvas.width, 90);
-  ctx.fillStyle = pal.main; ctx.fillRect(0, 356, canvas.width, 4);
+  ctx.fillStyle = '#140a00'; ctx.fillRect(0, 360, canvas.width, 90);
+  ctx.fillStyle = pal.primary; ctx.fillRect(0, 356, canvas.width, 4);
 
-  // Landmarks / Buildings
+  // Buildings with Transition sliding support
   ctx.save();
   if (isTransitioning) ctx.translate(bgOffset, 0);
-
-  buildings.forEach(b => {
-    if (b.hp > 0) {
-      const currentH = (b.h * (b.hp / b.maxHp));
-      const currentY = 360 - currentH;
-      drawCustomBuilding(b, currentH, currentY, pal);
-      ctx.fillStyle = pal.text; ctx.font = '10px monospace'; ctx.textAlign = 'center';
-      ctx.fillText(b.name, b.x + b.w / 2, 378);
-    } else {
-      ctx.fillStyle = '#333'; ctx.fillRect(b.x, 345, b.w, 15);
-      ctx.fillStyle = pal.accent; ctx.font = '10px monospace'; ctx.textAlign = 'center';
-      ctx.fillText('RUINED', b.x + b.w / 2, 357);
-    }
-  });
+  buildings.forEach(b => drawDetailedBuilding(b));
   ctx.restore();
 
   // Helicopters & Bullets
   helicopters.forEach(h => {
-    ctx.fillStyle = '#888'; ctx.fillRect(h.x, h.y, h.w, h.h);
-    ctx.fillStyle = pal.accent; ctx.fillRect(h.x + h.w/2 - 5, h.y + 4, 10, 6);
+    ctx.fillStyle = '#777'; ctx.fillRect(h.x, h.y, h.w, h.h);
+    ctx.fillStyle = pal.secondary; ctx.fillRect(h.x + h.w/2 - 5, h.y + 4, 10, 6);
     ctx.fillStyle = '#fff'; ctx.fillRect(h.x - 10, h.y - 3, h.w + 20, 3);
   });
 
@@ -535,64 +606,61 @@ function draw() {
 
   drawPlayer();
 
-  // Nuke Overlay Effect
+  // Screen-Nuke Visual FX Overlay
   if (nukeActiveTimer > 0) {
     ctx.fillStyle = `rgba(0, 255, 200, ${nukeActiveTimer / 35})`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
+  // FX Particles & Floating Text
   particles.forEach(p => { ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.size, p.size); });
-  popups.forEach(pop => { ctx.fillStyle = pop.color; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.fillText(pop.text, pop.x, pop.y); });
+  popups.forEach(pop => { ctx.fillStyle = pop.color; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center'; ctx.fillText(pop.text, pop.x, pop.y); });
 
-  // HUD Elements
-  ctx.fillStyle = pal.main; ctx.font = 'bold 15px monospace'; ctx.textAlign = 'left';
+  // HUD: Score & Stage Info
+  ctx.fillStyle = pal.primary; ctx.font = 'bold 15px monospace'; ctx.textAlign = 'left';
   ctx.fillText(`SCORE: ${score}`, 20, 28);
-  ctx.fillText(`SECTOR: #${stagesCleared + 1}`, 20, 48);
+  ctx.fillText(`CHEMBUR SECTOR: #${stagesCleared + 1}`, 20, 48);
 
-  // Health Bar
+  // HUD: Health Bar
   ctx.fillStyle = '#333'; ctx.fillRect(20, 60, 140, 10);
-  ctx.fillStyle = player.hp > 30 ? pal.main : pal.accent; 
+  ctx.fillStyle = player.hp > 30 ? pal.primary : pal.accent; 
   ctx.fillRect(20, 60, (player.hp / player.maxHp) * 140, 10);
   ctx.fillStyle = '#fff'; ctx.font = '9px monospace'; ctx.fillText(`HP: ${player.hp}%`, 22, 68);
 
-  // BREATH BAR (Screen-Nuke)
+  // HUD: ATOMIC BREATH BAR (Screen-Nuke)
   const isFull = breathEnergy >= maxBreathEnergy;
   ctx.fillStyle = '#222'; ctx.fillRect(20, 80, 200, 16);
-  ctx.fillStyle = isFull ? (Math.floor(Date.now()/100)%2 === 0 ? pal.accent : pal.main) : pal.accent;
+  ctx.fillStyle = isFull ? (Math.floor(Date.now()/100)%2 === 0 ? pal.secondary : pal.accent) : pal.secondary;
   ctx.fillRect(20, 80, (breathEnergy / maxBreathEnergy) * 200, 16);
   ctx.fillStyle = isFull ? '#000' : '#fff'; ctx.font = 'bold 10px monospace';
-  ctx.fillText(isFull ? 'PRESS ENTER FOR ATOMIC NUKE!' : `BREATH ENERGY: ${Math.floor(breathEnergy)}%`, 25, 92);
-
-  // PALETTE BUTTON HUD
-  ctx.fillStyle = '#222'; ctx.fillRect(canvas.width - 110, 60, 90, 24);
-  ctx.strokeStyle = pal.main; ctx.strokeRect(canvas.width - 110, 60, 90, 24);
-  ctx.fillStyle = pal.main; ctx.font = '10px monospace'; ctx.textAlign = 'center';
-  ctx.fillText(`COLOR: ${pal.name}`, canvas.width - 65, 75);
+  ctx.fillText(isFull ? 'PRESS ENTER / NUKE FOR ATOMIC BLAST!' : `BREATH ENERGY: ${Math.floor(breathEnergy)}%`, 25, 92);
 
   // Timer & High Score
-  ctx.textAlign = 'right'; ctx.fillStyle = timer <= 10 ? pal.accent : pal.main;
-  ctx.font = 'bold 16px monospace'; ctx.fillText(`TIME: ${timer}s`, canvas.width - 20, 28);
-  ctx.fillStyle = pal.main; ctx.font = '14px monospace'; ctx.fillText(`HIGH SCORE: ${highScore}`, canvas.width - 20, 48);
+  ctx.textAlign = 'right'; ctx.fillStyle = timer <= 10 ? pal.accent : pal.primary;
+  ctx.font = 'bold 16px monospace';
+  ctx.fillText(`TIME: ${timer}s`, canvas.width - 20, 28);
+  ctx.fillStyle = pal.primary; ctx.font = '14px monospace';
+  ctx.fillText(`HIGH SCORE: ${highScore}`, canvas.width - 20, 48);
 
-  // Screens
+  // Screen Overlays
   if (gameState === 'START') {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.88)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = pal.main; ctx.font = 'bold 22px monospace'; ctx.textAlign = 'center';
+    ctx.fillStyle = pal.primary; ctx.font = 'bold 22px monospace'; ctx.textAlign = 'center';
     ctx.fillText('CHOTA BABY MROQ: CHEMBUR BLITZ', canvas.width / 2, 170);
     ctx.font = '13px monospace'; ctx.fillStyle = '#ffffff';
-    ctx.fillText('Dodge helicopter bullets, smash unique Chembur landmarks,', canvas.width / 2, 210);
-    ctx.fillText('charge your atomic energy bar, and unleash SCREEN-NUKES!', canvas.width / 2, 230);
-    ctx.fillStyle = pal.main; ctx.font = '15px monospace';
-    ctx.fillText('PRESS ANY KEY / CLICK / TAP TO PLAY', canvas.width / 2, 280);
+    ctx.fillText('Dodge helicopter bullets, smash detailed Chembur landmarks,', canvas.width / 2, 210);
+    ctx.fillText('fill your Atomic Bar, and unleash SCREEN-NUKE BREATH!', canvas.width / 2, 230);
+    ctx.fillStyle = pal.primary; ctx.font = '15px monospace';
+    ctx.fillText('PRESS ANY KEY, SMASH, OR CLICK TO PLAY', canvas.width / 2, 280);
   } else if (gameState === 'GAMEOVER') {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.88)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = pal.accent; ctx.font = 'bold 26px monospace'; ctx.textAlign = 'center';
-    ctx.fillText(player.hp <= 0 ? 'MROQ WAS DEFEATED!' : 'TIME IS UP!', canvas.width / 2, 150);
+    ctx.fillText(player.hp <= 0 ? 'MROQ WAS DESTROYED!' : 'TIME IS UP!', canvas.width / 2, 150);
     ctx.fillStyle = '#ffffff'; ctx.font = '18px monospace';
     ctx.fillText(`FINAL SCORE: ${score}`, canvas.width / 2, 195);
     ctx.fillText(`SECTORS LEVELED: ${stagesCleared}`, canvas.width / 2, 225);
-    ctx.fillStyle = pal.main; ctx.font = '14px monospace';
-    ctx.fillText("Press 'SPACE' or Tap to Play Again!", canvas.width / 2, 280);
+    ctx.fillStyle = pal.primary; ctx.font = '14px monospace';
+    ctx.fillText("Press 'SPACE', 'R' or SMASH to Play Again!", canvas.width / 2, 280);
   }
 
   ctx.restore();
