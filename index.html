@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Chembur Kaiju Rampage</title>
+  <title>Chembur Mroq Rampage</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
     body {
@@ -74,7 +74,7 @@
 </head>
 <body>
 
-  <h1 id="titleText">CHEMBUR KAIJU RAMPAGE</h1>
+  <h1 id="titleText">CHEMBUR MROQ RAMPAGE</h1>
   <div class="game-box">
     <canvas id="gameCanvas" width="800" height="450"></canvas>
   </div>
@@ -328,6 +328,7 @@ setupTouchBtn('btnNuke', () => {
 function startGame() {
   score = 0; timer = 60; stagesCleared = 0;
   breathEnergy = 0; player.hp = 100;
+  screenShake = 0;
   helicopters = []; bullets = []; particles = []; popups = [];
   gameState = 'PLAYING';
   initBuildings(0); resetTimer();
@@ -346,6 +347,8 @@ function resetTimer() {
 function gameOver() {
   gameState = 'GAMEOVER';
   if (score > highScore) highScore = score;
+  // Shake screen for max 3 seconds (approx 180 frames at 60fps)
+  screenShake = Math.min(screenShake, 180);
   clearInterval(timerInterval);
 }
 
@@ -433,6 +436,8 @@ function addPopup(text, x, y, color = '#ffff00') {
 
 // --- UPDATE LOOP ---
 function update() {
+  if (screenShake > 0) screenShake--;
+
   if (gameState !== 'PLAYING') return;
 
   if (keys['KeyA'] || keys['ArrowLeft']) { player.x -= player.speed; player.dir = 'left'; }
@@ -445,7 +450,6 @@ function update() {
   }
 
   if (nukeActiveTimer > 0) nukeActiveTimer--;
-  if (screenShake > 0) screenShake--;
 
   if (isTransitioning) {
     transitionProgress += 0.05;
@@ -639,7 +643,8 @@ function drawMenu() {
 function draw() {
   ctx.save();
   if (screenShake > 0) {
-    ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
+    const intensity = Math.min(screenShake, 15);
+    ctx.translate((Math.random() - 0.5) * intensity, (Math.random() - 0.5) * intensity);
   }
 
   // Sky & Moon
