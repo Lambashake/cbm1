@@ -38,6 +38,7 @@
       image-rendering: pixelated;
       max-width: 100%;
       height: auto;
+      touch-action: none;
     }
     
     /* MOBILE TOUCH CONTROLS */
@@ -238,10 +239,13 @@ function spawnHelicopters() {
 // --- INPUT & MENU SELECTION LOGIC ---
 const keys = {};
 
-function handleCanvasClick(e) {
+function handleInteraction(clientX, clientY) {
   const rect = canvas.getBoundingClientRect();
-  const clickX = e.clientX - rect.left;
-  const clickY = e.clientY - rect.top;
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+
+  const clickX = (clientX - rect.left) * scaleX;
+  const clickY = (clientY - rect.top) * scaleY;
 
   if (gameState === 'PALETTE_SELECT') {
     const opts = ['neon', 'retro', 'synth'];
@@ -255,8 +259,8 @@ function handleCanvasClick(e) {
     }
   } else if (gameState === 'MONSTER_SELECT') {
     for (let i = 0; i < monsters.length; i++) {
-      const boxY = 170 + i * 65;
-      if (clickX >= 220 && clickX <= 580 && clickY >= boxY && clickY <= boxY + 50) {
+      const boxY = 155 + i * 75;
+      if (clickX >= 200 && clickX <= 600 && clickY >= boxY && clickY <= boxY + 58) {
         selectedMonsterIdx = i;
         startGame();
         return;
@@ -267,7 +271,17 @@ function handleCanvasClick(e) {
   }
 }
 
-canvas.addEventListener('click', handleCanvasClick);
+canvas.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  handleInteraction(e.clientX, e.clientY);
+});
+
+canvas.addEventListener('touchstart', (e) => {
+  if (e.touches && e.touches[0]) {
+    e.preventDefault();
+    handleInteraction(e.touches[0].clientX, e.touches[0].clientY);
+  }
+}, { passive: false });
 
 window.addEventListener('keydown', (e) => {
   keys[e.code] = true;
@@ -292,10 +306,13 @@ window.addEventListener('keyup', (e) => { keys[e.code] = false; });
 // Touch Controls setup
 const setupTouchBtn = (id, onStart, onEnd) => {
   const el = document.getElementById(id);
-  el.addEventListener('touchstart', (e) => { e.preventDefault(); onStart(); });
-  el.addEventListener('touchend', (e) => { e.preventDefault(); if(onEnd) onEnd(); });
-  el.addEventListener('mousedown', (e) => { e.preventDefault(); onStart(); });
-  el.addEventListener('mouseup', (e) => { e.preventDefault(); if(onEnd) onEnd(); });
+  const startHandler = (e) => { e.preventDefault(); onStart(); };
+  const endHandler = (e) => { e.preventDefault(); if(onEnd) onEnd(); };
+  
+  el.addEventListener('pointerdown', startHandler);
+  el.addEventListener('pointerup', endHandler);
+  el.addEventListener('touchstart', startHandler, { passive: false });
+  el.addEventListener('touchend', endHandler, { passive: false });
 };
 
 setupTouchBtn('btnLeft', () => { keys['ArrowLeft'] = true; }, () => { keys['ArrowLeft'] = false; });
@@ -584,7 +601,7 @@ function drawMenu() {
     ctx.fillStyle = '#00ff66'; ctx.font = 'bold 24px monospace';
     ctx.fillText('SELECT COLOR PALETTE', canvas.width / 2, 110);
     ctx.font = '13px monospace'; ctx.fillStyle = '#aaa';
-    ctx.fillText('Choose your favorite visual theme:', canvas.width / 2, 140);
+    ctx.fillText('Tap or Click your favorite visual theme:', canvas.width / 2, 140);
 
     const opts = [
       { key: '1. CYBER NEON', color: '#00ff66' },
@@ -604,7 +621,7 @@ function drawMenu() {
     ctx.fillStyle = pal.primary; ctx.font = 'bold 24px monospace';
     ctx.fillText('SELECT MROQ FORM', canvas.width / 2, 90);
     ctx.font = '13px monospace'; ctx.fillStyle = '#aaa';
-    ctx.fillText('Pick MROQ\'s form to destroy Chembur with:', canvas.width / 2, 120);
+    ctx.fillText('Tap or Click MROQ\'s form:', canvas.width / 2, 120);
 
     monsters.forEach((m, i) => {
       const boxY = 155 + i * 75;
