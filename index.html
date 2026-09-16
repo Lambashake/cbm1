@@ -114,9 +114,9 @@ function setPalette(key) {
 
 // --- MONSTER TYPES ---
 const monsters = [
-  { id: 'godzilla', name: 'GODZILLA (MROQ)', color: '#1c7c34', accent: '#00ffff', power: 'ATOMIC BREATH' },
-  { id: 'cat', name: 'MEOWZILLA (GIANT CAT)', color: '#ffaa44', accent: '#ff00aa', power: 'NYAN LASER' },
-  { id: 'bugblatter', name: 'BUGBLATTER BEAST OF TRAAL', color: '#8833aa', accent: '#00ff66', power: 'TOWEL WARP BLAST' }
+  { id: 'godzilla', name: 'GODZILLA FORM', color: '#1c7c34', accent: '#00ffff', power: 'ATOMIC BREATH' },
+  { id: 'cat', name: 'MEOWZILLA FORM', color: '#ffaa44', accent: '#ff00aa', power: 'NYAN LASER' },
+  { id: 'bugblatter', name: 'BUGBLATTER BEAST FORM', color: '#8833aa', accent: '#00ff66', power: 'TOWEL WARP BLAST' }
 ];
 let selectedMonsterIdx = 0;
 
@@ -214,7 +214,7 @@ function initBuildings(setIndex = 0) {
     buildings.push({
       x: 40 + i * spacing, y: 360 - h, w: 80, h: h,
       hp: 100, maxHp: 100, name: currentSet[i % currentSet.length],
-      color: buildingColors[Math.floor(Math.random() * buildingColors.length)], // Varying facade color
+      color: buildingColors[Math.floor(Math.random() * buildingColors.length)],
       style: Math.floor(Math.random() * 3),
       roofType: Math.floor(Math.random() * 3)
     });
@@ -492,15 +492,12 @@ function drawDetailedBuilding(b) {
   const currentY = 360 - currentH;
 
   if (b.hp > 0) {
-    // Unique Color Facade for each building
     ctx.fillStyle = b.color; 
     ctx.fillRect(b.x, currentY, b.w, currentH);
     
-    // 3D Shadow
     ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.fillRect(b.x + b.w - 12, currentY, 12, currentH);
 
-    // Windows Grid & Ledges
     ctx.fillStyle = pal.window;
     const cols = 3;
     const colW = (b.w - 20) / cols;
@@ -518,7 +515,6 @@ function drawDetailedBuilding(b) {
       }
     }
 
-    // Rooftop Architecture
     ctx.fillStyle = '#1a1a2e';
     ctx.fillRect(b.x - 2, currentY - 4, b.w + 4, 4);
 
@@ -549,40 +545,34 @@ function drawPlayer() {
   if (player.dir === 'left') ctx.scale(-1, 1);
 
   if (m.id === 'godzilla') {
-    // Godzilla / Mroq
     ctx.fillStyle = m.color; ctx.fillRect(-20, -30, 40, 60);
     ctx.fillStyle = '#145a25'; ctx.fillRect(-10, -40, 35, 20);
     ctx.fillStyle = '#ffea00'; ctx.fillRect(15, -35, 6, 6);
     ctx.fillStyle = m.accent; ctx.fillRect(-24, -20, 6, 8); ctx.fillRect(-24, -5, 6, 8);
     if (player.attacking) { ctx.fillStyle = '#ffea00'; ctx.fillRect(20, -10, 25, 12); }
   } else if (m.id === 'cat') {
-    // Giant Cat (Meowzilla)
-    ctx.fillStyle = m.color; ctx.fillRect(-20, -20, 40, 50); // Body
-    ctx.fillStyle = '#ffffff'; ctx.fillRect(-10, -10, 20, 30); // Belly
-    ctx.fillStyle = m.color; ctx.fillRect(-15, -40, 30, 25); // Head
-    // Ears
+    ctx.fillStyle = m.color; ctx.fillRect(-20, -20, 40, 50);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(-10, -10, 20, 30);
+    ctx.fillStyle = m.color; ctx.fillRect(-15, -40, 30, 25);
     ctx.beginPath(); ctx.moveTo(-15, -40); ctx.lineTo(-20, -55); ctx.lineTo(-5, -40); ctx.fill();
     ctx.beginPath(); ctx.moveTo(15, -40); ctx.lineTo(20, -55); ctx.lineTo(5, -40); ctx.fill();
-    // Eyes & Tail
     ctx.fillStyle = '#00ffcc'; ctx.fillRect(2, -32, 5, 5);
     ctx.fillStyle = '#ffaa44'; ctx.fillRect(-30, 10, 15, 6);
     if (player.attacking) { ctx.fillStyle = '#ff00aa'; ctx.fillRect(15, -30, 25, 8); }
   } else if (m.id === 'bugblatter') {
-    // Ravenous Bugblatter Beast of Traal
-    ctx.fillStyle = m.color; ctx.fillRect(-22, -35, 44, 65); // Big dumb body
-    ctx.fillStyle = '#440055'; ctx.fillRect(-15, -45, 30, 20); // Head
-    // TOWEL over its head! (Because it assumes if you can't see it, it can't see you!)
+    ctx.fillStyle = m.color; ctx.fillRect(-22, -35, 44, 65);
+    ctx.fillStyle = '#440055'; ctx.fillRect(-15, -45, 30, 20);
     ctx.fillStyle = '#ffffff'; ctx.fillRect(-18, -48, 36, 12);
-    ctx.fillStyle = '#ff0055'; ctx.fillRect(-18, -42, 36, 3); // Towel stripes
-    // Vicious claws
+    ctx.fillStyle = '#ff0055'; ctx.fillRect(-18, -42, 36, 3);
     ctx.fillStyle = '#00ff66'; ctx.fillRect(-26, -10, 8, 15); ctx.fillRect(18, -10, 8, 15);
     if (player.attacking) { ctx.fillStyle = m.accent; ctx.fillRect(15, -15, 25, 14); }
   }
 
   ctx.restore();
 
-  ctx.fillStyle = pal.primary; ctx.font = '11px monospace'; ctx.textAlign = 'center';
-  ctx.fillText(m.name.split(' ')[0], player.x + player.w / 2, player.y - 12);
+  // ALWAYS DISPLAY 'MROQ' ON TOP REGARDLESS OF MONSTER CHOICE
+  ctx.fillStyle = pal.primary; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('MROQ', player.x + player.w / 2, player.y - 12);
 }
 
 function drawMenu() {
@@ -612,9 +602,9 @@ function drawMenu() {
 
   } else if (gameState === 'MONSTER_SELECT') {
     ctx.fillStyle = pal.primary; ctx.font = 'bold 24px monospace';
-    ctx.fillText('SELECT YOUR KAIJU', canvas.width / 2, 90);
+    ctx.fillText('SELECT MROQ FORM', canvas.width / 2, 90);
     ctx.font = '13px monospace'; ctx.fillStyle = '#aaa';
-    ctx.fillText('Pick a monster to destroy Chembur with:', canvas.width / 2, 120);
+    ctx.fillText('Pick MROQ\'s form to destroy Chembur with:', canvas.width / 2, 120);
 
     monsters.forEach((m, i) => {
       const boxY = 155 + i * 75;
@@ -622,7 +612,7 @@ function drawMenu() {
       ctx.strokeStyle = m.accent; ctx.lineWidth = 2; ctx.strokeRect(200, boxY, 400, 58);
       
       ctx.fillStyle = m.accent; ctx.font = 'bold 15px monospace';
-      ctx.fillText(`${i + 1}. ${m.name}`, canvas.width / 2, boxY + 25);
+      ctx.fillText(`${i + 1}. MROQ: ${m.name}`, canvas.width / 2, boxY + 25);
       ctx.fillStyle = '#fff'; ctx.font = '11px monospace';
       ctx.fillText(`POWER: ${m.power}`, canvas.width / 2, boxY + 44);
     });
@@ -706,7 +696,7 @@ function draw() {
   } else if (gameState === 'GAMEOVER') {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.88)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = pal.accent; ctx.font = 'bold 26px monospace'; ctx.textAlign = 'center';
-    ctx.fillText(player.hp <= 0 ? `${currentMonster.name} DESTROYED!` : 'TIME IS UP!', canvas.width / 2, 150);
+    ctx.fillText(player.hp <= 0 ? `MROQ WAS DESTROYED!` : 'TIME IS UP!', canvas.width / 2, 150);
     ctx.fillStyle = '#ffffff'; ctx.font = '18px monospace';
     ctx.fillText(`FINAL SCORE: ${score}`, canvas.width / 2, 195);
     ctx.fillText(`SECTORS LEVELED: ${stagesCleared}`, canvas.width / 2, 225);
